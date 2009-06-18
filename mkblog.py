@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 from django.conf import settings
 from django.template import Context, Template
