@@ -3,3 +3,21 @@ mkblog
 
 Static blog generation tool using Django templates.
 
+* What
+
+  The whole of mkblog is mkblog.py, a short python script.
+
+* Behaviour
+
+  When run, mkblog.py:
+
+    - determines its configuration
+       + attempts to read settings.py in the current directory; or
+         falls back to
+       + uses the default values recorded in mkblog.py
+
+    - reads every file under SRC_DIRS and outputs a corresponding file
+      under DEST_DIR; paths are preserved
+        + each file is indiscriminantly run through Django's
+          templating system
+
