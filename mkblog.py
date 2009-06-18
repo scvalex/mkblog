@@ -4,6 +4,7 @@ import os
 import django.conf
 from django.template import Context, Template
 from django.template.loader import render_to_string
+import sys
 
 INTERESTING_EXTS = ( "html", "xml", "rss" )
 TEMPLATE_DIRS = ( "templates", )
@@ -20,6 +21,7 @@ def makeDestPath(p):
 def main():
     # Settings stuff
     try:
+        sys.path.append(".") # load modules from cur dir
         import settings
         global TEMPLATE_DIRS, SRC_DIRS, DEST_DIR, INTERESTING_EXTS
         INTERESTING_EXTS = getattr(settings, "INTERESTING_EXTS", INTERESTING_EXTS)
