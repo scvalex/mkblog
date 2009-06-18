@@ -21,3 +21,19 @@ Static blog generation tool using Django templates.
         + each file is indiscriminantly run through Django's
           templating system
 
+* Settings
+  
+  All *per-site* settings are saved in settings.py in the directory
+  where mkblog.py is run
+
+  All *system-wide* settings are saved in the mkblog.py script itself
+  (don't do this).
+
+  Available settings:
+    - TEMPLATE_DIRS :: directories where mkblog.py searches for
+                       templates
+    - SRC_DIRS :: directories of source files
+    - DEST_DIR :: directory (note the singular) where the output is
+                  saved
+    - INTERESTING_EXTS :: list of extensions mkblog.py should consider
+         (all other files are ignored)
