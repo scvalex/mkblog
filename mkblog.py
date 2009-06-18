@@ -41,6 +41,8 @@ def main():
     for sd in SRC_DIRS:
         for dp, dns, fs in os.walk(sd):
             p = dp[len(sd):].lstrip(os.sep) # cut out the top-level dir
+            if p.startswith("."):
+                continue # ignore dot files/dirs
             p = makeDestPath(p) # prepend the dest dir and ensure path exists
             print "  %s:" % p
             for f in fs:
