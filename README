@@ -20,6 +20,9 @@ Static blog generation tool using Django templates.
       under DEST_DIR; paths are preserved
         + each file with an INTERESTING_EXTension is run through
           Django's templating system
+	+ if a Python module with the same name (but .py extension) is
+          present, it is read and the variable context is passed on to
+          the templating system
 
 * Settings
   

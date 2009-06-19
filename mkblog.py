@@ -12,16 +12,31 @@ SRC_DIRS = ( "src", )
 DEST_DIR = "blog"
 
 def makeDestPath(p):
-    """ Ensure that the path exists in the output directory and return it """
+    """ Ensure that the path exists in the output directory and return it. """
     p = os.path.join(DEST_DIR, p)
     try: os.makedirs(p)
     except: pass # os.makedirs raises error if path exists
     return p
 
+def getContext(f):
+    """ Read associated config file and return read Context. """
+    c = {}
+    try:
+        config_dir = os.path.abspath(os.path.dirname(f))
+        module_name = os.path.splitext(os.path.basename(f))[0] # name without extension
+        sys.path = [config_dir] + sys.path
+        print config_dir, module_name
+        c = __import__(module_name).context
+        sys.path = sys.path[1:]
+    except:
+        print "No associated config for %s" % f
+    return Context(c)
+
 def main():
+    print "* Reading settings"
     # Settings stuff
     try:
-        sys.path.append(".") # load modules from cur dir
+        sys.path = ["."] + sys.path # load modules from cur dir
         import settings
         global TEMPLATE_DIRS, SRC_DIRS, DEST_DIR, INTERESTING_EXTS
         INTERESTING_EXTS = getattr(settings, "INTERESTING_EXTS", INTERESTING_EXTS)
@@ -37,18 +52,20 @@ def main():
     django.conf.settings.configure(TEMPLATE_DIRS=TEMPLATE_DIRS)
 
     # Go through dirs, process files, etc.
-    print "Output:"
+    print "* Source: %s" % ", ".join(SRC_DIRS)
+    print "* Output: %s" % DEST_DIR
     for sd in SRC_DIRS:
         for dp, dns, fs in os.walk(sd):
             p = dp[len(sd):].lstrip(os.sep) # cut out the top-level dir
             if p.startswith("."):
                 continue # ignore dot files/dirs
             p = makeDestPath(p) # prepend the dest dir and ensure path exists
-            print "  %s:" % p
+            print "    %s:" % p
             for f in fs:
                 if os.path.splitext(f)[1] in INTERESTING_EXTS:
-                    print "    %s" % f
-                    open(os.path.join(p, f), "w").write(Template(open(os.path.join(dp, f)).read()).render(Context()))
+                    print "        %s" % f
+                    c = getContext(os.path.join(dp, f))
+                    open(os.path.join(p, f), "w").write(Template(open(os.path.join(dp, f)).read()).render(c))
 
 if __name__ == "__main__":
     main()
