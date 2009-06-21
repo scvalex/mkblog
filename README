@@ -17,7 +17,7 @@ Static blog generation tool using Django templates.
        + the default values recorded in mkblog.py
 
     - reads every file under SRC_DIRS and outputs a corresponding file
-      under DEST_DIR; paths are preserved
+      under DEST_DIR; output is flat, directories are ignored
         + each file with an INTERESTING_EXTension is run through
           Django's templating system
 	+ if a Python module with the same name (but .py extension) is
