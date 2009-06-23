@@ -38,8 +38,12 @@ class BlogEntry:
         except: pass # os.makedirs raises error if path exists
         return p
 
-    def write(self, p):
-        open(p, "w").write(Template(open(self.filepath).read()).render(self.context))
+    def write(self, path, moreContext = {}):
+        """ write(path, moreContext)
+
+        Write the entry to file path extending the existing context with moreContext.
+        """
+        open(path, "w").write(Template(open(self.filepath).read()).render(self.context.update(Context(moreContext))))
 
 def main():
     print "* Reading settings"
@@ -77,7 +81,8 @@ def main():
     for e in es:
         op = e.makeDestPath(DEST_DIR)
         print "    %s" % op
-        e.write(op)
+        e.write(path = op,
+                moreContext = { "entries": es })
 
 if __name__ == "__main__":
     main()
