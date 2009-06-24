@@ -34,7 +34,7 @@ class BlogEntry:
     def makeDestPath(self, dd):
         """ Ensure that the path exists in the output directory and return it. """
         p = os.path.join(dd, os.path.basename(self.filepath))
-        try: os.makedirs(os.path.basename(p))
+        try: os.makedirs(os.path.dirname(p))
         except: pass # os.makedirs raises error if path exists
         return p
 
