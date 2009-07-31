@@ -44,8 +44,14 @@ def getContext(f):
         sys.path = sys.path[1:]
     except:
         print "No associated config for %s" % f
-    bs = getBlockNodes(f)
-    return Context(c)
+    c = Context(c)
+
+    blocks = {}
+    for n in getBlockNodes(f):
+        blocks[n.name] = n.render(c)
+    c["blocks"] = blocks
+    
+    return c
 
 class BlogEntry:
     def __init__(self, filepath):
