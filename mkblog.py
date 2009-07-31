@@ -2,17 +2,39 @@
 
 import os
 import django.conf
-from django.template import Context, Template
-from django.template.loader import render_to_string
+from django.template import Context, NodeList, Template
+from django.template.loader import get_template, render_to_string
+from django.template.loader_tags import BlockNode
 import sys
 
 INTERESTING_EXTS = ( "html", "xml", "rss" )
-TEMPLATE_DIRS = ( "templates", )
 SRC_DIRS = ( "src", )
+TEMPLATE_DIRS = ( "templates", )
 DEST_DIR = "blog"
 
+def flattenNodes(self):
+    """ Flatten a hierarchy of nodes """
+    nodes = []
+    for node in self:
+        nodes.append(node)
+        if hasattr(node, "nodelist"):
+            nodes.extend(flattenNodes(node.nodelist))
+    return nodes
+
+def getNodes(fn):
+    """ Return the list of nodes from file fn """
+    return flattenNodes(get_template(os.path.basename(fn)))
+
+def getBlockNodes(fn):
+    """ Return the list of BlockNodes from file fn """
+    blocknodes = []
+    for node in getNodes(fn):
+        if isinstance(node, BlockNode):
+            blocknodes.append(node)
+    return blocknodes
+
 def getContext(f):
-    """ Read associated config file and return read Context. """
+    """ Generate Context from file and associated config """
     c = {}
     try:
         config_dir = os.path.abspath(os.path.dirname(f))
@@ -22,6 +44,7 @@ def getContext(f):
         sys.path = sys.path[1:]
     except:
         print "No associated config for %s" % f
+    bs = getBlockNodes(f)
     return Context(c)
 
 class BlogEntry:
@@ -53,11 +76,13 @@ def main():
         import settings
         global TEMPLATE_DIRS, SRC_DIRS, DEST_DIR, INTERESTING_EXTS
         INTERESTING_EXTS = getattr(settings, "INTERESTING_EXTS", INTERESTING_EXTS)
-        TEMPLATE_DIRS = getattr(settings, "TEMPLATE_DIRS", TEMPLATE_DIRS)
+        TEMPLATE_DIRS = list(getattr(settings, "TEMPLATE_DIRS", TEMPLATE_DIRS))
         SRC_DIRS = getattr(settings, "SRC_DIRS", SRC_DIRS)
+        TEMPLATE_DIRS.extend(SRC_DIRS)
         DEST_DIR = getattr(settings, "DEST_DIR", DEST_DIR)
-    except:
+    except Exception as e:
         print "No settings.py found; using default settings."
+        print "Actual error", e
 
     # o.p.splitext includes the dot in the extension
     INTERESTING_EXTS = ["." + e for e in INTERESTING_EXTS]
