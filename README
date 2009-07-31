@@ -24,6 +24,18 @@ Static blog generation tool using Django templates.
           present, it is read and the variable context is passed on to
           the templating system
 
+  Come again?
+
+  Assume this is settings.py:
+
+    TEMPLATE_DIRS = ( "pages/templates", )
+    SRC_DIRS = ( "/home/scvalex/blog", )
+    DEST_DIR = "pages/blog"
+    INTERESTING_EXTS = ( "html", )
+
+  All *.html files in /home/scvalex/blog is run through Django
+  Templates and is written in pages/blog.
+
 * Settings
   
   All *per-site* settings are saved in settings.py in the directory
@@ -40,3 +52,13 @@ Static blog generation tool using Django templates.
                   saved
     - INTERESTING_EXTS :: list of extensions mkblog.py should consider
          (all other files are ignored)
+
+* Extended Context
+
+  Django template files can use the follosing variables:
+    - entries :: list of blog entries (ALL relevant files in
+                 SRC_DIRS); each entry contains:
+                 + everything in the associated module (I like to
+                   include date, title, tags, etc.)
+                 + blocks :: a dictionary with all the text blocks in
+                             the post

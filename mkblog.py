@@ -72,7 +72,9 @@ class BlogEntry:
 
         Write the entry to file path extending the existing context with moreContext.
         """
-        open(path, "w").write(Template(open(self.filepath).read()).render(self.context.update(Context(moreContext))))
+        nc = self.context
+        nc.update(Context(moreContext))
+        open(path, "w").write(Template(open(self.filepath).read()).render(nc))
 
 def main():
     print "* Reading settings"
@@ -92,12 +94,11 @@ def main():
 
     # o.p.splitext includes the dot in the extension
     INTERESTING_EXTS = ["." + e for e in INTERESTING_EXTS]
-
     django.conf.settings.configure(TEMPLATE_DIRS=TEMPLATE_DIRS)
 
     # Go through dirs, process files, etc.
     print "* Source: %s" % ", ".join(SRC_DIRS)
-    es = []
+    es = [] # BlogEntries
     for sd in SRC_DIRS:
         for dp, dns, fs in os.walk(sd):
             p = dp[len(sd):].lstrip(os.sep) # cut out the top-level dir
@@ -109,11 +110,12 @@ def main():
                     print "    %s" % fp
                     es.append(BlogEntry(filepath = fp))
     print "* Output: %s" % DEST_DIR
+    cs = [e.context for e in es] # only contexts
     for e in es:
         op = e.makeDestPath(DEST_DIR)
         print "    %s" % op
         e.write(path = op,
-                moreContext = { "entries": es })
+                moreContext = { "entries": cs })
 
 if __name__ == "__main__":
     main()
