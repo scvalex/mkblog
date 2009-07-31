@@ -50,7 +50,7 @@ def getContext(f):
     for n in getBlockNodes(f):
         blocks[n.name] = n.render(c)
     c["blocks"] = blocks
-    
+
     return c
 
 class BlogEntry:
@@ -92,7 +92,7 @@ def main():
 
     # o.p.splitext includes the dot in the extension
     INTERESTING_EXTS = ["." + e for e in INTERESTING_EXTS]
-    
+
     django.conf.settings.configure(TEMPLATE_DIRS=TEMPLATE_DIRS)
 
     # Go through dirs, process files, etc.
