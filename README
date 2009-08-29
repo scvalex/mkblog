@@ -1,48 +1,30 @@
 mkblog
 ======
 
-Static blog generation tool using Django templates.
+Static site generator
 
 * What
 
-  The whole of mkblog is mkblog.py, a short python script.
+  mkblog.py generates a static site by passing the sources through jinja2.
 
 * Behaviour
 
   When run, mkblog.py:
 
-    - determines its configuration
-       + attempts to read settings.py in the current directory; or
-         falls back to
-       + the default values recorded in mkblog.py
+    - reads its settings from settings.py in the current directory
 
     - reads every file under SRC_DIRS and outputs a corresponding file
-      under DEST_DIR; output is flat, directories are ignored
+      under DEST_DIR flattening any hierarchies
         + each file with an INTERESTING_EXTension is run through
-          Django's templating system
-	+ if a Python module with the same name (but .py extension) is
-          present, it is read and the variable context is passed on to
-          the templating system
-
-  Come again?
-
-  Assume this is settings.py:
-
-    TEMPLATE_DIRS = ( "pages/templates", )
-    SRC_DIRS = ( "/home/scvalex/blog", )
-    DEST_DIR = "pages/blog"
-    INTERESTING_EXTS = ( "html", )
-
-  All *.html files in /home/scvalex/blog is run through Django
-  Templates and is written in pages/blog.
+          jinja2
+	+ if a Python module with the same name (plus .py extension)
+          is present, it is read and the variable context is passed on
+          to jinja2
 
 * Settings
-  
-  All *per-site* settings are saved in settings.py in the directory
-  where mkblog.py is run.
 
-  All *system-wide* settings are saved in the mkblog.py script itself
-  (don't do this).
+  All settings are saved in settings.py in the directory where
+  mkblog.py is run.
 
   Configuration variables:
     - TEMPLATE_DIRS :: directories where mkblog.py searches for
@@ -53,12 +35,21 @@ Static blog generation tool using Django templates.
     - INTERESTING_EXTS :: list of extensions mkblog.py should consider
          (all other files are ignored)
 
+  Example settings.py:
+      settings = { "TEMPLATE_DIRS": ( "pages/templates", ),
+                   "SRC_DIRS": ( "/home/scvalex/blog", ),
+                   "DEST_DIR": "pages/blog",
+                   "INTERESTING_EXTS": ( "html", ) }
+
+    Note that TEMPLATE_DIRS and DEST_DIR are relative, but SRC_DIRS
+    are absolute.
+
 * Extended Context
 
-  Django template files can use the follosing variables:
-    - entries :: list of blog entries (ALL relevant files in
-                 SRC_DIRS); each entry contains:
+  Template files can use the following variables:
+    - pages :: list of Pages (ALL relevant files in SRC_DIRS); each
+                 entry contains:
                  + everything in the associated module (I like to
                    include date, title, tags, etc.)
                  + blocks :: a dictionary with all the text blocks in
-                             the post
+                             the page

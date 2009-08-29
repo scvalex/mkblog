@@ -1,121 +1,93 @@
 #!/usr/bin/env python
 
+from imp import load_source
+from jinja2 import Environment, FileSystemLoader
+from jinja2.nodes import Block
 import os
-import django.conf
-from django.template import Context, NodeList, Template
-from django.template.loader import get_template, render_to_string
-from django.template.loader_tags import BlockNode
-import sys
 
-INTERESTING_EXTS = ( "html", "xml", "rss" )
-SRC_DIRS = ( "src", )
-TEMPLATE_DIRS = ( "templates", )
-DEST_DIR = "blog"
+SETTINGS = { "INTERESTING_EXTS": ("html", "xml", "rss"),
+             "SRC_DIRS": ("src", ),
+             "TEMPLATE_DIRS": ("templates", ),
+             "DEST_DIR": "blog"}
 
-def flattenNodes(self):
-    """ Flatten a hierarchy of nodes """
-    nodes = []
-    for node in self:
-        nodes.append(node)
-        if hasattr(node, "nodelist"):
-            nodes.extend(flattenNodes(node.nodelist))
-    return nodes
+def read_variable(fn, vn="context"):
+    """Return variable from filename"""
+    try: return getattr(load_source("mlblf", fn), vn, None)
+    except: return None
 
-def getNodes(fn):
-    """ Return the list of nodes from file fn """
-    return flattenNodes(get_template(os.path.basename(fn)))
+def makeDestPath(dd):
+    try: os.makedirs(dd)
+    except: pass # o.makedirs raises if path exists
+    return dd
 
-def getBlockNodes(fn):
-    """ Return the list of BlockNodes from file fn """
-    blocknodes = []
-    for node in getNodes(fn):
-        if isinstance(node, BlockNode):
-            blocknodes.append(node)
-    return blocknodes
+def date(value, format='%H:%M / %d-%m-%Y'):
+    return value.strftime(format)
 
-def getContext(f):
-    """ Generate Context from file and associated config """
-    c = {}
-    try:
-        config_dir = os.path.abspath(os.path.dirname(f))
-        module_name = os.path.splitext(os.path.basename(f))[0] # name without extension
-        sys.path = [config_dir] + sys.path
-        c = __import__(module_name).context
-        sys.path = sys.path[1:]
-    except:
-        print "No associated config for %s" % f
-    c = Context(c)
+class Page:
+    def __init__(self, filepath, env):
+        if not filepath or not env:
+            raise Exception("Page constructor needs path to input file and an environment")
 
-    blocks = {}
-    for n in getBlockNodes(f):
-        blocks[n.name] = n.render(c)
-    c["blocks"] = blocks
-
-    return c
-
-class BlogEntry:
-    def __init__(self, filepath):
-        if not filepath:
-            raise Exception("No file given.  Comitting suicide.")
         self.filepath = filepath
-        self.context = getContext(filepath)
+        self.env = env
 
-    def makeDestPath(self, dd):
-        """ Ensure that the path exists in the output directory and return it. """
-        p = os.path.join(dd, os.path.basename(self.filepath))
-        try: os.makedirs(os.path.dirname(p))
-        except: pass # os.makedirs raises error if path exists
-        return p
+        self.uid = os.path.basename(self.filepath)
 
-    def write(self, path, moreContext = {}):
-        """ write(path, moreContext)
+        c = read_variable(filepath+".py", "context")
+        if c:
+            for k,v in c.items():
+                setattr(self, k, v)
+        else:
+            print "Warning: No context for %s" % filepath
 
-        Write the entry to file path extending the existing context with moreContext.
-        """
-        nc = self.context
-        nc.update(Context(moreContext))
-        open(path, "w").write(Template(open(self.filepath).read()).render(nc))
+        self.blocks = []
+        try:
+            self.blocks = list(self.env.parse(open(filepath).read()).find_all(Block))
+            self.blocks = dict([(b.name, b.body[0].nodes[0].data) for b in self.blocks])
+        except Exception as e:
+            print "Could not get blocks from %s" % filepath
+            print "Actual error: ", e
+
+    def write(self, path, more_context = {}):
+        t = self.env.get_template(self.uid)
+        open(os.path.join(path, self.uid), "w").write(t.render(more_context))
 
 def main():
     print "* Reading settings"
-    # Settings stuff
+    global SETTINGS
     try:
-        sys.path = ["."] + sys.path # load modules from cur dir
-        import settings
-        global TEMPLATE_DIRS, SRC_DIRS, DEST_DIR, INTERESTING_EXTS
-        INTERESTING_EXTS = getattr(settings, "INTERESTING_EXTS", INTERESTING_EXTS)
-        TEMPLATE_DIRS = list(getattr(settings, "TEMPLATE_DIRS", TEMPLATE_DIRS))
-        SRC_DIRS = getattr(settings, "SRC_DIRS", SRC_DIRS)
-        TEMPLATE_DIRS.extend(SRC_DIRS)
-        DEST_DIR = getattr(settings, "DEST_DIR", DEST_DIR)
+        ss = read_variable("settings.py", "settings")
+        SETTINGS.update(ss)
     except Exception as e:
-        print "No settings.py found; using default settings."
+        print "No settings.py found; using default settings"
         print "Actual error", e
 
-    # o.p.splitext includes the dot in the extension
-    INTERESTING_EXTS = ["." + e for e in INTERESTING_EXTS]
-    django.conf.settings.configure(TEMPLATE_DIRS=TEMPLATE_DIRS)
+    # splittext includes the dot in the extension
+    SETTINGS["INTERESTING_EXTS"] = ["." + e for e in SETTINGS["INTERESTING_EXTS"]]
 
-    # Go through dirs, process files, etc.
-    print "* Source: %s" % ", ".join(SRC_DIRS)
-    es = [] # BlogEntries
-    for sd in SRC_DIRS:
+    env = Environment(loader = FileSystemLoader(SETTINGS["SRC_DIRS"] + SETTINGS["TEMPLATE_DIRS"]))
+    env.filters["date"] = date
+
+    print "* Source: %s" % ", ".join(SETTINGS["SRC_DIRS"])
+    ps = [] # Pages
+    for sd in SETTINGS["SRC_DIRS"]:
         for dp, dns, fs in os.walk(sd):
-            p = dp[len(sd):].lstrip(os.sep) # cut out the top-level dir
-            if p.startswith("."):
+            d = dp[len(sd):].lstrip(os.sep) # cut out the top-level dir
+            if d.startswith("."):
                 continue # ignore dot files/dirs
             for f in fs:
-                if os.path.splitext(f)[1] in INTERESTING_EXTS:
+                if os.path.splitext(f)[1] in SETTINGS["INTERESTING_EXTS"]:
                     fp = os.path.join(sd, f)
                     print "    %s" % fp
-                    es.append(BlogEntry(filepath = fp))
-    print "* Output: %s" % DEST_DIR
-    cs = [e.context for e in es] # only contexts
-    for e in es:
-        op = e.makeDestPath(DEST_DIR)
-        print "    %s" % op
-        e.write(path = op,
-                moreContext = { "entries": cs })
+                    ps.append(Page(filepath = fp, env = env))
+
+    print "* Output: %s" % SETTINGS["DEST_DIR"]
+    mega_context = { "pages": ps}
+    op = makeDestPath(SETTINGS["DEST_DIR"])
+    for p in ps:
+        print "    %s" % p.uid
+        p.write(path = op,
+                more_context = mega_context)
 
 if __name__ == "__main__":
     main()
