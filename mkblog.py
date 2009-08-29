@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from datetime import datetime
 from imp import load_source
 from jinja2 import Environment, FileSystemLoader
 from jinja2.nodes import Block
@@ -22,6 +23,11 @@ def makeDestPath(dd):
 
 def date(value, format='%H:%M / %d-%m-%Y'):
     return value.strftime(format)
+
+def keysort(xs, key, reverse=False):
+    ys = xs[:]
+    ys.sort(key=lambda x: getattr(x, key, datetime(1970, 1, 1)), reverse=reverse)
+    return ys
 
 class Page:
     def __init__(self, filepath, env):
@@ -67,6 +73,7 @@ def main():
 
     env = Environment(loader = FileSystemLoader(SETTINGS["SRC_DIRS"] + SETTINGS["TEMPLATE_DIRS"]))
     env.filters["date"] = date
+    env.filters["keysort"] = keysort
 
     print "* Source: %s" % ", ".join(SETTINGS["SRC_DIRS"])
     ps = [] # Pages
