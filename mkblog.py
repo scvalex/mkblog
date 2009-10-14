@@ -39,9 +39,9 @@ class Page:
 
         self.uid = os.path.basename(self.filepath)
 
-        c = read_variable(filepath+".py", "context")
-        if c:
-            for k,v in c.items():
+        self.c = read_variable(filepath+".py", "context")
+        if self.c:
+            for k,v in self.c.items():
                 setattr(self, k, v)
         else:
             print "Warning: No context for %s" % filepath
@@ -56,7 +56,11 @@ class Page:
 
     def write(self, path, more_context = {}):
         t = self.env.get_template(self.uid)
-        open(os.path.join(path, self.uid), "w").write(t.render(more_context))
+        c = more_context
+        for k, v in self.c.items():
+            if not c.has_key(k):
+                c[k] = v
+        open(os.path.join(path, self.uid), "w").write(t.render(c))
 
 def main():
     print "* Reading settings"
